@@ -1,3 +1,10 @@
+[Memcached](http://memcached.org/) is one of the widest spread caching solution,
+and like Statsd or Redis, it also operates with a custom protocol between its clients
+and servers.
+
+This project looks at learning about the Memcached protocol while implementing a TCP server
+in Go.
+
 
 ## Prerequisites
 
@@ -59,5 +66,5 @@ print "decr", mc.get("key")
 
 After you've spent some time on it, here are some reference implementations:
 
-1. ??
+1. [memcached.go](./memcached.go) - implementation of the non-bonus componenits using `sync.RWMutex` for consistency.
 
