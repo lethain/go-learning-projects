@@ -16,9 +16,7 @@ metrics with fewer computing resources.
 
 ## Goals
 
-1.  Write a Go server that runs on port 8125.
-2.  It should use either TCP or UDP or both, but note that Python script below assumes UDP
-    and you'll have to pass a different flag to it if you prefer TCP.
+1.  Write a UDP server in Go that runs on port 8125.
 3.  Implement support for the the [Counter](https://github.com/b/statsd_spec) type (one of three types of metrics supported by Statsd).
 4.  Buffer metrics and flush them to stdout or stderr every 10 seconds.
 5.  (Bonus) Use the [flag](https://golang.org/pkg/flag/) module to allow changing port.
@@ -60,9 +58,9 @@ for i in range(0, 5):
     sc.timing("timer", i, rate=1)
 ```
 
-## Reference Implementations
+## Implementations
 
-Here are a couple of reference implementations:
+After you've taken a stab, here are a couple of reference implementations:
 
 1. [statsd.go](./statsd.go) - simple solution which does not synchronize flushing
 2. [channels.go](./channels.go) - solution which synchronizes flushing using channels
