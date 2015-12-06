@@ -10,7 +10,7 @@ import (
 )
 
 type Counter struct {
-	Name string
+	Name  string
 	Value int64
 }
 
@@ -41,7 +41,7 @@ func flushStats(counterStream <-chan Counter, flushPeriod int) {
 		select {
 		case <-ticker.C:
 			log.Printf("Counters: %v\n", counters)
-			counters = make(map[string]int64)			
+			counters = make(map[string]int64)
 		case msg := <-counterStream:
 			counters[msg.Name] += msg.Value
 		default:
@@ -63,7 +63,6 @@ func startServer(port int64, flushPeriod int) {
 		log.Fatal(err)
 	}
 	defer ServerConn.Close()
-
 
 	counterStream := make(chan Counter)
 

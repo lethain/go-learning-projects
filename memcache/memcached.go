@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net"
-	"log"
 	"bufio"
-	"io"
-	"regexp"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"regexp"
 	"strconv"
 	"sync"
 )
@@ -16,7 +16,6 @@ var incrDecrFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+) ([0-9.]+)\r\n$")
 var getFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+)\r\n$")
 var kvs = make(map[string]string)
 var lock = sync.RWMutex{}
-
 
 func parseCommand(msg string) (string, string, error) {
 	m := cmdFormat.FindStringSubmatch(msg)
@@ -70,6 +69,7 @@ Response format:
 */
 
 var setFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+) ([0-9.]+) ([0-9.]+) ([0-9.]+)")
+
 func handleSet(msg string, reader *bufio.Reader) string {
 	m := setFormat.FindStringSubmatch(msg)
 	if len(m) < 5 {
@@ -88,7 +88,6 @@ func handleSet(msg string, reader *bufio.Reader) string {
 	lock.Unlock()
 	return "STORED\r\n"
 }
-
 
 /*
 Handle incrementing and decrementing operations.
@@ -119,18 +118,17 @@ func handleIncrDecr(cmd string, msg string) string {
 		log.Printf("%v", err)
 		return fmt.Sprintf("ERROR %v\r\n", err)
 	}
-	
+
 	if cmd == "incr" {
-		kvs[key] = strconv.FormatInt(existing + mod, 10)
+		kvs[key] = strconv.FormatInt(existing+mod, 10)
 	} else if cmd == "decr" {
-		kvs[key] = strconv.FormatInt(existing - mod, 10)
+		kvs[key] = strconv.FormatInt(existing-mod, 10)
 	}
 	newVal := kvs[key]
 
 	lock.Unlock()
 	return fmt.Sprintf("%v\r\n", newVal)
 }
-
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -157,7 +155,6 @@ func handleConnection(conn net.Conn) {
 		}
 	}
 }
-
 
 func main() {
 	loc := ":11211"

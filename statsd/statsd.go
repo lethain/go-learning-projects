@@ -6,8 +6,8 @@ import (
 	"net"
 	"regexp"
 	"strconv"
-	"time"
 	"sync"
+	"time"
 )
 
 var format = regexp.MustCompile(`^(?P<metric>[a-zA-Z0-9.-_]+):(?P<val>[0-9.]+)\|(?P<kind>[a-z]+)$`)
@@ -16,7 +16,6 @@ type Counters struct {
 	sync.RWMutex
 	Metrics map[string]int64
 }
-
 
 func handleStat(counters *Counters, recv string) {
 	matches := format.FindStringSubmatch(recv)
