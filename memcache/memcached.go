@@ -8,12 +8,15 @@ import (
 	"regexp"
 	"fmt"
 	"strconv"
+	"sync"
 )
 
 var cmdFormat = regexp.MustCompile("^([a-z]+) ")
 var incrDecrFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+) ([0-9.]+)\r\n$")
 var getFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+)\r\n$")
 var kvs = make(map[string]string)
+var lock = sync.RWMutex{}
+
 
 func parseCommand(msg string) (string, string, error) {
 	m := cmdFormat.FindStringSubmatch(msg)
@@ -43,7 +46,9 @@ func handleGet(msg string) string {
 	if len(m) < 2 {
 		return fmt.Sprintf("CLIENT_ERROR couln't extract key, value from %v\r\n", msg)
 	}
+	lock.RLock()
 	key, val := m[1], kvs[m[1]]
+	lock.RUnlock()
 	resp := fmt.Sprintf("VALUE %v %v %v\r\n%v\r\nEND\r\n", key, 0, len(val), val)
 	return resp
 }
@@ -78,7 +83,9 @@ func handleSet(msg string, reader *bufio.Reader) string {
 	if err != nil {
 		log.Printf("Error reading buffer: %v\n", err)
 	}
+	lock.Lock()
 	kvs[key] = string(buf)
+	lock.Unlock()
 	return "STORED\r\n"
 }
 
@@ -97,6 +104,7 @@ func handleIncrDecr(cmd string, msg string) string {
 	key, val := m[1], m[2]
 
 	// increment/decrement existing value
+	lock.Lock()
 	existingStr := kvs[key]
 	var existing int64
 	var err error
@@ -117,7 +125,10 @@ func handleIncrDecr(cmd string, msg string) string {
 	} else if cmd == "decr" {
 		kvs[key] = strconv.FormatInt(existing - mod, 10)
 	}
-	return fmt.Sprintf("%v\r\n", kvs[key])
+	newVal := kvs[key]
+
+	lock.Unlock()
+	return fmt.Sprintf("%v\r\n", newVal)
 }
 
 
@@ -133,7 +144,6 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		cmd, rest, _ := parseCommand(msg)
-		log.Printf("Help %v\n", rest)
 		switch cmd {
 		case "set":
 			conn.Write([]byte(handleSet(rest, reader)))
