@@ -1,4 +1,4 @@
-This repository contains a variety of projects intended for practicing the [[ https://golang.org | Go ]]
+This repository contains a variety of projects intended for practicing the [Go](https://golang.org)
 programming language. Each of these projects is intended to provide experience with Go, while also providing
 exposure to the implementation details of an interesting piece of technology you probably already use,
 such as Statsd, Memcache or Redis.
@@ -20,7 +20,7 @@ the output of the below Statsd project, etc.
 Projects:
 
 1. [Writing a Statsd Server in Go.](./statsd/)
-2. Writing Memcached in Go.
+2. [Writing Memcached in Go.](./memcache/)
 
 
 Future project ideas:
