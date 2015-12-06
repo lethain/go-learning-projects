@@ -19,7 +19,7 @@ the output of the below Statsd project, etc.
 
 Projects:
 
-1. Writing a Statsd Server in Go.
+1. [Writing a Statsd Server in Go.](./statsd/)
 2. Writing Memcached in Go.
 
 

@@ -8,13 +8,13 @@ running locally on each of your servers to collect metrics and then periodically
 each server into Graphite. This greatly reduces the load on the Graphite server, allowing you to collect far more
 metrics with fewer computing resources.
 
-Prerequisites:
+## Prerequisites
 
 1. [Install Go on your laptop. ](https://golang.org/dl/)
 2. [Do the Go Tour.](https://tour.golang.org/welcome/1)
 3. [Review the Go Language Reference.](https://golang.org/ref/spec)
 
-Goals:
+## Goals
 
 1.  Write a Go server that runs on port 8125.
 2.  It should use either TCP or UDP or both, but note that Python script below assumes UDP
@@ -26,14 +26,14 @@ Goals:
 7.  (Bonus) Synchronize flushing to avoid threading race conditions using either the [sync](https://golang.org/pkg/sync/) module
     or [channels](https://gobyexample.com/channels).
 
-References:
+## References
 
 1. [Statsd Protocol Specification ](https://github.com/b/statsd_spec)
 2. [net module for UDP and TCP servers ](https://golang.org/pkg/net/)
 3. [flag module for command line flags](https://golang.org/pkg/flag/)
 4. [time module for periodic execution](https://golang.org/pkg/time/)
 
-# Validation
+## Validation
 
 Here is a simple example of testing your implementation in Python using the
 [statsd](http://statsd.readthedocs.org/en/v3.2.1/reference.html) module.
@@ -48,7 +48,7 @@ pip install statsd
 python
 ```
 
-Then from within the Python shell (see [stats.py](./)).
+Then from within the Python shell (see [stats.py](./stats.py)).
 
 ```
 import statsd
@@ -60,7 +60,7 @@ for i in range(0, 5):
     sc.timing("timer", i, rate=1)
 ```
 
-# Reference Implementations
+## Reference Implementations
 
 Here are a couple of reference implementations:
 
