@@ -26,7 +26,6 @@ Projects:
 Future project ideas:
 
 1. Writing a Redis server in Go.
-2. Writing a Memcache server in Go.
 3. Writing a PostgreSQL server in Go.
 4. Consuming MySQL binlog in Go.
 5. Write a [Dynamo](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwj2g9uE58fJAhXjjIMKHUspAT8QFggcMAA&url=http%3A%2F%2Fwww.allthingsdistributed.com%2Ffiles%2Famazon-dynamo-sosp2007.pdf&usg=AFQjCNHhJccl0_0I9x7tkWizMx6NjcuUkQ&sig2=MxsX4LhM7QJRYg4GPcdGeA&bvm=bv.108538919,d.amc) inspired key-value store in Go.
