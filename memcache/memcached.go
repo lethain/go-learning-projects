@@ -70,7 +70,7 @@ func handleSet(msg string, reader *bufio.Reader) string {
 	if len(m) < 5 {
 		return fmt.Sprintf("CLIENT_ERROR couln't extract values from %v\r\n", msg)
 	}
-	key, flags, ttl, sizeStr := m[1], m[2], m[3], m[4]
+	key, _, _, sizeStr := m[1], m[2], m[3], m[4]
 	size, _ := strconv.ParseInt(sizeStr, 10, 16)
 	buf := make([]byte, size)
 	_, err := reader.Read(buf)
