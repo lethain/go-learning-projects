@@ -13,7 +13,6 @@ import (
 var cmdFormat = regexp.MustCompile("^([a-z]+) ")
 var incrDecrFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+) ([0-9.]+)\r\n$")
 var getFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+)\r\n$")
-
 var kvs = make(map[string]string)
 
 func parseCommand(msg string) (string, string, error) {
@@ -24,7 +23,21 @@ func parseCommand(msg string) (string, string, error) {
 	return m[1], msg[len(m[1])+1:], nil
 }
 
+/*
+Handle get operation. (Doesn't handle multiple keys.)
 
+Command formats:
+  get <key>*\r\n
+  gets <key>*\r\n
+
+Response format:
+
+  VALUE <key> <flags> <bytes> [<cas unique>]\r\n
+  <data block>\r\n
+  VALUE <key> <flags> <bytes> [<cas unique>]\r\n
+  <data block>\r\n
+  END\r\n
+*/
 func handleGet(msg string) string {
 	m := getFormat.FindStringSubmatch(msg)
 	if len(m) < 2 {
@@ -32,8 +45,41 @@ func handleGet(msg string) string {
 	}
 	key, val := m[1], kvs[m[1]]
 	resp := fmt.Sprintf("VALUE %v %v %v\r\n%v\r\nEND\r\n", key, 0, len(val), val)
-	log.Print(resp)
 	return resp
+}
+
+/*
+Handle the set command.
+
+Command format:
+  CMD, flags, TTL, size in bytes;
+  set some_key 0 0 10
+  <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
+  <data block>r\n
+
+Response format:
+  STORED\r\n - replaced
+  NOT_STORED\r\n - doesn't apply to set
+  EXISTS\r\n - related to check-and-set, which we're not handling
+  NOT_FOUND\r\n - related to check-and-set, which we're not handling
+*/
+
+var setFormat = regexp.MustCompile("^([a-zA-Z0-9._-]+) ([0-9.]+) ([0-9.]+) ([0-9.]+)")
+func handleSet(msg string, reader *bufio.Reader) string {
+	m := setFormat.FindStringSubmatch(msg)
+	if len(m) < 5 {
+		return fmt.Sprintf("CLIENT_ERROR couln't extract values from %v\r\n", msg)
+	}
+	key, flags, ttl, sizeStr := m[1], m[2], m[3], m[4]
+	size, _ := strconv.ParseInt(sizeStr, 10, 16)
+	buf := make([]byte, size)
+	_, err := reader.Read(buf)
+	reader.Discard(2)
+	if err != nil {
+		log.Printf("Error reading buffer: %v\n", err)
+	}
+	kvs[key] = string(buf)
+	return "STORED\r\n"
 }
 
 
@@ -77,18 +123,9 @@ func handleIncrDecr(cmd string, msg string) string {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
+	reader := bufio.NewReader(conn)
 	for {
-		// CMD, flags, TTL, size in bytes; "set some_key 0 0 10"
-		// <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
-		// cas <key> <flags> <exptime> <bytes> <cas unique> [noreply]\r\n
-		// delete <key> [noreply]\r\n
-		// touch <key> <exptime> [noreply]\r\n
-		// get <key>*\r\n
-		// gets <key>*\r\n
-		// VALUE <key> <flags> <bytes> [<cas unique>]\r\n
-		// <data block>\r\n
-		msg, err := bufio.NewReader(conn).ReadString('\n')
-
+		msg, err := reader.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("Error parsing cmd: %v\n", err)
@@ -99,8 +136,7 @@ func handleConnection(conn net.Conn) {
 		log.Printf("Help %v\n", rest)
 		switch cmd {
 		case "set":
-			log.Printf(msg)
-			conn.Write([]byte("STORED\r\n"))
+			conn.Write([]byte(handleSet(rest, reader)))
 		case "get":
 			conn.Write([]byte(handleGet(rest)))
 		case "incr", "decr":
