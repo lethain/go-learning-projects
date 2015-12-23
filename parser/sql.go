@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 )
 
 type Status int
@@ -39,6 +40,12 @@ type Item struct {
 	Content string
 }
 
+func (i *Item) String() string {
+
+	name := reflect.TypeOf(i.ItemType).Elem().Name()
+	return fmt.Sprintf("Item(%v, %v)", name, i.Content)
+}
+
 type Lexer struct {
 	input string
 	items chan Item
@@ -56,7 +63,13 @@ func (l *Lexer) String() string {
 }
 
 func (l *Lexer) Parse() {
-	fmt.Printf("%v - parsing finished\n", l)
+	for {
+		
+		
+
+	}
+
+	
 	l.items <- Item{ItemType: EOFItem}
 	close(l.items)
 }
@@ -64,7 +77,6 @@ func (l *Lexer) Parse() {
 
 func (l *Lexer) Items() chan Item {
 	return l.items
-
 }
 
 func main() {
