@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"reflect"
+	"strings"
 )
 
 type Status int
@@ -26,13 +26,14 @@ type Candidate struct {
 
 
 
-type ItemType int
+type ItemType string
 const (
-	SelectItem ItemType = iota
-	ForItem
-	WhereItem
-	AsterixItem
-	EOFItem
+	StringItem ItemType = "String"
+	SelectItem ItemType = "Select"
+	FromItem ItemType = "From"
+	WhereItem ItemType = "Where"
+	AsterixItem ItemType = "Asterix"
+	EOFItem ItemType = "EOF"
 )
 
 type Item struct {
@@ -41,9 +42,12 @@ type Item struct {
 }
 
 func (i *Item) String() string {
-
-	name := reflect.TypeOf(i.ItemType).Elem().Name()
-	return fmt.Sprintf("Item(%v, %v)", name, i.Content)
+	switch i.Content {
+	case "":
+		return fmt.Sprintf("Item(%v)", i.ItemType)
+	default:
+		return fmt.Sprintf("Item(%v, \"%v\")", i.ItemType, i.Content)
+	}
 }
 
 type Lexer struct {
@@ -63,13 +67,21 @@ func (l *Lexer) String() string {
 }
 
 func (l *Lexer) Parse() {
-	for {
-		
-		
-
+	remaining := l.input
+	for _, word := range strings.Split(remaining, " ") {
+		switch strings.ToLower(word) {
+		case "select":
+			l.items <- Item{ItemType: SelectItem}
+		case "from":
+			l.items <- Item{ItemType: FromItem}
+		case "where":
+			l.items <- Item{ItemType: WhereItem}
+		case "*":
+			l.items <- Item{ItemType: AsterixItem}				
+		default:
+			l.items <- Item{ItemType: StringItem, Content: word}
+		}
 	}
-
-	
 	l.items <- Item{ItemType: EOFItem}
 	close(l.items)
 }
@@ -80,10 +92,10 @@ func (l *Lexer) Items() chan Item {
 }
 
 func main() {
-	i := "SELECT * FROM Candidate"	
+	i := "SELECT * FROM Candidate"
 	l := NewLexer(i)
-	fmt.Printf("NewLexer(%v)\n", l)
+	fmt.Println(l)
 	for item := range l.Items() {
-		fmt.Printf("Item: %v\n", item)
+		fmt.Println(item.String())
 	}
 }
