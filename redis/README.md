@@ -52,3 +52,9 @@ print "GET (should be None)\t", r.get('foo')
 print "SET                 \t", r.set('foo', 'bar')
 print "GET (should be bar) \t", r.get('foo')
 ```
+
+## Implementations
+
+After you've spent some time on it, here are some reference implementations:
+
+1. [redis.go](./redis.go) - pretty naive implementation
