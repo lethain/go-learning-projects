@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"strconv"
+	"strings"
 	"log"
 	"io"
 	"net"
@@ -58,7 +59,7 @@ func (s *Scanner) Scan() ([]byte, error) {
 			}
 		default:
 			buf = append(buf, next)
-		}	
+		}
 	}
 }
 
@@ -73,7 +74,7 @@ func (s *Scanner) VerifyAndParse(char byte) (int, error) {
 	next, err := s.Scan()
 	if err != nil {
 		return 0, err
-	}	
+	}
 	if err := EnsureByte(char, next); err != nil {
 		return 0,  err
 	}
@@ -81,7 +82,7 @@ func (s *Scanner) VerifyAndParse(char byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int(num), nil	
+	return int(num), nil
 
 }
 
@@ -118,23 +119,58 @@ func (s *Scanner) ScanCommand() ([][]byte, error) {
 	return parts, nil
 }
 
+func EnsureLength(expected int, actual int) error {
+	if expected != actual {
+		return fmt.Errorf(RedisErrorFmt, fmt.Sprintf("expected %v commands but received %v", expected, actual))
+	}
+	return nil
+}
+
+func (rs *RedisServer) HandleCommand(parts [][]byte) (string, error) {
+	if len(parts) == 0 {
+		return "", fmt.Errorf(RedisErrorFmt, "not enough parameters")
+	}
+
+	for i, part := range parts {
+		log.Printf("%v\t%v", i, string(part))
+	}
+	
+	switch strings.ToLower(string(parts[0])) {
+	case "get":
+		if err := EnsureLength(2, len(parts)); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("+%v\r\n", 100), nil
+	case "set":
+		if err := EnsureLength(3, len(parts)); err != nil {
+			return "", err
+		}
+		return RedisOk, nil
+		
+	
+	default:
+		return "", fmt.Errorf(RedisErrorFmt, fmt.Sprintf("%v is not a supported command", string(parts[0])))
+	}
+	return RedisOk, nil
+}
+
 func (rs *RedisServer) HandleConn(conn net.Conn) {
 	defer conn.Close()
 	scanner := Scanner{bufio.NewReader(conn)}
 	for {
 		parts, err := scanner.ScanCommand()
-		
 		if err != nil {
 			if err != io.EOF {
 				log.Printf("error reading connecting: %v", err)
 			}
 			return
 		}
-
-		for i, part := range parts {
-			log.Printf("%v\t%v", i, string(part))
+		resp, err := rs.HandleCommand(parts)
+		if err != nil {
+			conn.Write([]byte(fmt.Sprint(err)))
 		}
-		conn.Write([]byte(RedisOk))
+		conn.Write([]byte(resp))
+			
 	}
 }
 
@@ -151,7 +187,7 @@ func (rs *RedisServer) ListenAndServe() {
 			continue
 		}
 		go rs.HandleConn(conn)
-	}	
+	}
 }
 
 func main() {
