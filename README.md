@@ -20,6 +20,7 @@ the output of the below Statsd project, etc.
 Projects:
 
 1. [Writing a Statsd Server in Go.](./statsd/)
+2. [Writing Redis in Go.](./redis/)
 2. [Writing Memcached in Go.](./memcache/)
 3. [Writing a lexer/parser in Go.](./parser/)
 
