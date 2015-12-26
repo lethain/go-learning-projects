@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"sync"
 	"strconv"
 	"strings"
 	"log"
@@ -126,28 +127,56 @@ func EnsureLength(expected int, actual int) error {
 	return nil
 }
 
+
+type Datastore struct {
+	sync.RWMutex
+	data map[string][]byte
+}
+
+var kv = Datastore{data: make(map[string][]byte)}
+
+
 func (rs *RedisServer) HandleCommand(parts [][]byte) (string, error) {
 	if len(parts) == 0 {
 		return "", fmt.Errorf(RedisErrorFmt, "not enough parameters")
 	}
 
-	for i, part := range parts {
-		log.Printf("%v\t%v", i, string(part))
-	}
-	
 	switch strings.ToLower(string(parts[0])) {
 	case "get":
 		if err := EnsureLength(2, len(parts)); err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("+%v\r\n", 100), nil
+		kv.RLock()
+		val, exists := kv.data[string(parts[1])]
+		kv.RUnlock()
+		if exists {
+			return fmt.Sprintf("+%v\r\n", string(val)), nil
+		} else {
+			return "$-1\r\n", nil
+		}
 	case "set":
 		if err := EnsureLength(3, len(parts)); err != nil {
 			return "", err
 		}
+		kv.Lock()
+		kv.data[string(parts[1])] = parts[2]
+		kv.Unlock()
 		return RedisOk, nil
-		
-	
+	case "del":
+		if err := EnsureLength(2, len(parts)); err != nil {
+			return "", err
+		}
+		var resp string
+		kv.Lock()
+		_, exists := kv.data[string(parts[1])]
+		if exists {
+			delete(kv.data, string(parts[1]))
+			resp = fmt.Sprintf("+%v\r\n", 1)
+		} else {
+			resp = fmt.Sprintf("+%v\r\n", 0)		
+		}
+		kv.Unlock()
+		return resp, nil
 	default:
 		return "", fmt.Errorf(RedisErrorFmt, fmt.Sprintf("%v is not a supported command", string(parts[0])))
 	}
