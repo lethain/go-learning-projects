@@ -24,7 +24,12 @@ type Candidate struct {
      Status    Status
 }
 
-
+var Candidates = []Candidate{
+	Candidate{"Jack", "Doe", 25, "555-", 0},
+	Candidate{"Jill", "Doe", 30, "555-", 1},
+	Candidate{"Jack", "Murphy", 35, "555-", 2},
+	Candidate{"Jill", "Murphy", 45, "555-", 3},
+}
 
 type ItemType string
 const (
@@ -77,7 +82,7 @@ func (l *Lexer) Parse() {
 		case "where":
 			l.items <- Item{ItemType: WhereItem}
 		case "*":
-			l.items <- Item{ItemType: AsterixItem}				
+			l.items <- Item{ItemType: AsterixItem}
 		default:
 			l.items <- Item{ItemType: StringItem, Content: word}
 		}
@@ -86,16 +91,128 @@ func (l *Lexer) Parse() {
 	close(l.items)
 }
 
-
-func (l *Lexer) Items() chan Item {
-	return l.items
+func (l *Lexer) Items() []Item {
+	slice := make([]Item, 0)
+	for item := range l.items {
+		slice = append(slice, item)
+	}
+	return slice
 }
 
+type SelectQuery struct {
+	Table string
+	Fields []string
+	AllFields bool
+}
+
+
+func ItemPosition(it ItemType, items []Item) (int, bool) {
+	for i, val := range items {
+		if val.ItemType == it {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func ParseSelectQuery(items []Item) (SelectQuery, error) {
+	sq := SelectQuery{}
+
+	fromPos, foundFrom := ItemPosition(FromItem, items)
+	if !foundFrom {
+		return sq, fmt.Errorf("Didn't find any FROM")
+	}
+
+	// get the fields to select
+	fields := make([]string, 0)
+	for _, item := range items[:fromPos] {
+		switch item.ItemType {
+		case AsterixItem:
+			// use all fields
+			sq.AllFields = true
+		case StringItem:
+			field := strings.Trim(item.Content, ", ")
+			fields = append(fields, field)
+		default:
+			return sq, fmt.Errorf("%v was neither asterix nor a string", item.String())
+		}
+	}
+	sq.Fields = fields
+
+	if (fromPos + 3) > len(items) {
+		return sq, fmt.Errorf("must specify a table to select from.")
+
+	}
+
+	tableItem := items[fromPos+1]
+	if tableItem.ItemType != StringItem {
+		return sq, fmt.Errorf("%v is not a string", tableItem.String())
+	}
+
+	sq.Table = tableItem.Content
+	return sq, nil
+}
+
+func Query(q string) ([]Candidate, error) {
+	cands := make([]Candidate, 0)
+	l := NewLexer(q)
+
+	items := l.Items()
+	if len(items) < 1 {
+		return cands, fmt.Errorf("invalid query (too short)")
+	}
+
+	switch items[0].ItemType {
+	case SelectItem:
+		sq, err := ParseSelectQuery(items[1:])
+		if err != nil {
+			return cands, err
+		}
+		if sq.Table != "Candidate" {
+			return cands, fmt.Errorf("table %v was not one of [Candidates]", sq.Table)
+		}
+		if sq.AllFields {
+			sq.Fields = []string{"FirstName", "LastName", "Age", "Phone", "Status"}
+		}
+
+		// reflect would be more elegant, albeit slower, here
+		for _, cand := range Candidates {
+			c := Candidate{}
+			for _, field := range sq.Fields {
+				switch field {
+				case "FirstName":
+					c.FirstName = cand.FirstName
+				case "LastName":
+					c.LastName = cand.LastName
+				case "Age":
+					c.Age = cand.Age
+				case "Phone":
+					c.Phone = cand.Phone
+				case "Status":
+					c.Status = cand.Status
+				}
+			}
+			cands = append(cands, c)
+		}
+
+		return cands, nil
+
+	default:
+		err := fmt.Errorf("can't handle query of type: %v", items[0].Content)
+		return cands, err
+	}
+}
+
+
+
 func main() {
-	i := "SELECT * FROM Candidate"
-	l := NewLexer(i)
-	fmt.Println(l)
-	for item := range l.Items() {
-		fmt.Println(item.String())
+	queries := []string{"SELECT * FROM Candidate", "SELECT FirstName, LastName FROM Candidate", "UPDATE * FROM Candidate", "SELECT a, b, c FROM"}
+	for _, query := range queries {
+		fmt.Println(query)
+		resp, err := Query(query)
+		if err != nil {
+			fmt.Printf("\terror querying: %v\n", err)
+		}
+		fmt.Printf("\tcandidates: %v\n", resp)
 	}
 }
