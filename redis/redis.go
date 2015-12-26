@@ -2,18 +2,17 @@ package main
 
 import (
 	"bufio"
-	"sync"
-	"strconv"
-	"strings"
-	"log"
-	"io"
-	"net"
 	"flag"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 var loc = flag.String("loc", ":6379", "location:port to run server")
-
 
 type RedisServer struct {
 	Loc string
@@ -22,12 +21,10 @@ type RedisServer struct {
 const RedisErrorFmt = "-Error %v\r\n"
 const RedisOk = "+OK\r\n"
 
-
 type Command struct {
-	Type string
+	Type   string
 	Params string
 }
-
 
 type Scanner struct {
 	buffer *bufio.Reader
@@ -77,7 +74,7 @@ func (s *Scanner) VerifyAndParse(char byte) (int, error) {
 		return 0, err
 	}
 	if err := EnsureByte(char, next); err != nil {
-		return 0,  err
+		return 0, err
 	}
 	num, err := strconv.ParseInt(string(next[1:]), 10, 16)
 	if err != nil {
@@ -107,7 +104,7 @@ func (s *Scanner) ScanCommand() ([][]byte, error) {
 		if err != nil {
 			return parts, err
 		}
-		var  cmd []byte
+		var cmd []byte
 		for len(cmd) < size {
 			nextCmd, err := s.Scan()
 			if err != nil {
@@ -127,14 +124,12 @@ func EnsureLength(expected int, actual int) error {
 	return nil
 }
 
-
 type Datastore struct {
 	sync.RWMutex
 	data map[string][]byte
 }
 
 var kv = Datastore{data: make(map[string][]byte)}
-
 
 func (rs *RedisServer) HandleCommand(parts [][]byte) (string, error) {
 	if len(parts) == 0 {
@@ -173,7 +168,7 @@ func (rs *RedisServer) HandleCommand(parts [][]byte) (string, error) {
 			delete(kv.data, string(parts[1]))
 			resp = fmt.Sprintf("+%v\r\n", 1)
 		} else {
-			resp = fmt.Sprintf("+%v\r\n", 0)		
+			resp = fmt.Sprintf("+%v\r\n", 0)
 		}
 		kv.Unlock()
 		return resp, nil
@@ -199,7 +194,7 @@ func (rs *RedisServer) HandleConn(conn net.Conn) {
 			conn.Write([]byte(fmt.Sprint(err)))
 		}
 		conn.Write([]byte(resp))
-			
+
 	}
 }
 
